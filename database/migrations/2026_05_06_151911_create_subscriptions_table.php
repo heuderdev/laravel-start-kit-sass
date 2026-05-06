@@ -23,7 +23,7 @@ return new class extends Migration
             $table->timestamp('ends_at')->nullable();
             $table->timestamps();
 
-            $table->index(['tenants_id', 'stripe_status']);
+            $table->index(['tenant_id', 'stripe_status']);
         });
     }
 
