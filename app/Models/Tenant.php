@@ -13,12 +13,7 @@ class Tenant extends Model
 {
     use SoftDeletes, Billable;
 
-    protected $fillable = [
-        'name',
-        'slug',
-        'logo_url',
-        'settings',
-    ];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'settings' => 'array',

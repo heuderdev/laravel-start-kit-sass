@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->string('logo_url')->nullable();
             $table->json('settings')->nullable();
+            $table->string('plan')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
