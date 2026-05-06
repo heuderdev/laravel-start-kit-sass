@@ -20,7 +20,7 @@ return new class extends Migration
             $table->boolean('two_factor_enabled')->default(false);
             $table->text('two_factor_secret')->nullable();
             $table->text('two_factor_recovery_codes')->nullable();
-            $table->string('password')->change()->nullable(); // Socialite
+            $table->string('password')->nullable(); // Socialite
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
