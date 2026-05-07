@@ -10,7 +10,7 @@ Route::get('/user', function (Request $request) {
 Route::get('/login', function (Request $request) {
     return "login";
 })->name('login');
-session()->put('active_tenant_id', 1);
+
 Route::middleware(['tenant'])->group(function () {
 
     Route::get('/teste', function (Request $request) {
