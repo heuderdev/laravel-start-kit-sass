@@ -28,7 +28,7 @@ class ProvisionNewAccount
             dispatch(new CreateStripeCustomer($tenant, $name, $email));
 
             $user->tenants()->attach($tenant->id, [
-                'role'      => 'admin',
+                'role'      => 'owner',
                 'is_default' => true,
                 'status'    => 'active',
                 'joined_at' => now(),

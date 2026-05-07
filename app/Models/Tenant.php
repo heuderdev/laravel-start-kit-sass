@@ -17,6 +17,9 @@ class Tenant extends Model
 
     protected $casts = [
         'settings' => 'array',
+        'trial_ends_at' => 'datetime', // ← precisa ser datetime, não string
+        'plan_expires_at' => 'datetime',
+        'deleted_at'    => 'datetime',
     ];
 
     public function users(): BelongsToMany
@@ -26,9 +29,9 @@ class Tenant extends Model
             ->withTimestamps();
     }
 
-    public function subscriptions(): HasMany
-    {
-        return $this->hasMany(\Laravel\Cashier\Subscription::class, 'billable_id')
-            ->where('billable_type', self::class);
-    }
+    // public function subscriptions(): HasMany
+    // {
+    //     return $this->hasMany(\Laravel\Cashier\Subscription::class, 'billable_id')
+    //         ->where('billable_type', self::class);
+    // }
 }
