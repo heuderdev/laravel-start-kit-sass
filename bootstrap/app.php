@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->alias([
             'tenant' => \App\Http\Middleware\ResolveTenantContext::class,
+            'plan'    => \App\Http\Middleware\EnsureTenantHasPlan::class,
+        ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'stripe/*',
+            'api/stripe/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {})->create();
