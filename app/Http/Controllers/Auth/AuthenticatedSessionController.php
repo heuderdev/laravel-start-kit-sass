@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,10 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $tenant = $request->user()->defaultTenant();
+
+        session(['active_tenant_id' => $tenant->id]);
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
@@ -43,5 +48,36 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    public function storeApi(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email'    => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json([
+                'message' => 'Credenciais inválidas.',
+            ], 401);
+        }
+
+        $user   = Auth::user();
+        $tenant = $user->defaultTenant();
+        $token  = $user->createToken('api')->plainTextToken;
+
+        return response()->json([
+            'token'     => $token,
+            'tenant_id' => $tenant->id,
+            'user'      => $user,
+        ]);
+    }
+
+    public function destroyApi(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logout realizado.']);
     }
 }

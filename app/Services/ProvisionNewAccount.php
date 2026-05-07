@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\CreateStripeCustomer;
 use App\Models\User;
 use App\Models\Tenant;
 use Illuminate\Support\Str;
@@ -23,6 +24,8 @@ class ProvisionNewAccount
                 'slug'    => $this->generateUniqueSlug($name),
                 'plan'    => 'free',
             ]);
+
+            dispatch(new CreateStripeCustomer($tenant, $name, $email));
 
             $user->tenants()->attach($tenant->id, [
                 'role'      => 'admin',
