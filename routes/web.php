@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PricingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
@@ -8,6 +10,8 @@ use App\Http\Controllers\TenantController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'welcome'])->name('welcome');
+
+Route::get('/invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
 
 // Callbacks do Stripe — só auth, sem tenant (Stripe não envia X-Tenant-ID)
 Route::middleware('auth')->group(function () {
@@ -31,6 +35,13 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::get('/pricing',        [PricingController::class, 'index'])->name('pricing.index');
     Route::get('/pricing/{plan}', [PricingController::class, 'show'])->name('pricing.show');
+
+    Route::post('/invitations',                        [InvitationController::class, 'invite'])->name('invitations.invite');
+    Route::delete('/invitations/{invitation}/revoke',  [InvitationController::class, 'revoke'])->name('invitations.revoke');
+
+    Route::get('/members',              [MemberController::class, 'index'])->name('members.index');
+    Route::patch('/members/{user}',     [MemberController::class, 'update'])->name('members.update');
+    Route::delete('/members/{user}',    [MemberController::class, 'destroy'])->name('members.destroy');
 });
 
 require __DIR__ . '/auth.php';

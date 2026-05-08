@@ -29,6 +29,11 @@ class Tenant extends Model
             ->withTimestamps();
     }
 
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(TenantInvitation::class);
+    }
+
     // public function subscriptions(): HasMany
     // {
     //     return $this->hasMany(\Laravel\Cashier\Subscription::class, 'billable_id')
