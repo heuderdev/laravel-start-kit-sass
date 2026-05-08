@@ -44,4 +44,14 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('/members/{user}',    [MemberController::class, 'destroy'])->name('members.destroy');
 });
 
+Route::middleware(['auth', 'tenant', 'plan:pro'])->group(function () {
+    Route::get('/test', function () {
+        return 'Acesso permitido para planos Pro!';
+    })->name('test.plan');
+});
+
+Route::get('/tenant/inactive', function () {
+    return view('tenants.inactive');
+})->name('tenant.inactive');
+
 require __DIR__ . '/auth.php';
