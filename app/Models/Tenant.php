@@ -20,6 +20,8 @@ class Tenant extends Model
         'trial_ends_at' => 'datetime', // ← precisa ser datetime, não string
         'plan_expires_at' => 'datetime',
         'deleted_at'    => 'datetime',
+        'bypass_plan_limits' => 'boolean',
+        'bypass_plan_limits_data_limite' => 'datetime',
     ];
 
     public function users(): BelongsToMany

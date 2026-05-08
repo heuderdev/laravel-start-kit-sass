@@ -18,32 +18,27 @@ Route::get('/invitations/{token}/accept', [InvitationController::class, 'accept'
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroyApi'])->name('destroyApi.logout');
-
-    Route::middleware('tenant')->group(function () {
-        Route::get('/me', fn(Request $request) => $request->user())->name('me');
-    });
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+    Route::get('/me', fn(Request $request) => $request->user())->name('me');
+
     Route::get('/tenants', [TenantController::class, 'index'])->name('api.tenants.index');
     Route::post('/tenants/switch', [TenantController::class, 'switch'])->name('api.tenants.switch');
-});
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout']);
-    Route::get('/subscription/success',   [SubscriptionController::class, 'success']);
-    Route::get('/subscription/cancel',    [SubscriptionController::class, 'cancel']);
-});
-Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+    Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->name('api.subscription.checkout');
+    Route::get('/subscription/success',   [SubscriptionController::class, 'success'])->name('api.subscription.success');
+    Route::get('/subscription/cancel',    [SubscriptionController::class, 'cancel'])->name('api.subscription.cancel');
+
     Route::get('/pricing',        [PricingController::class, 'index'])->name('api.pricing.index');
     Route::get('/pricing/{plan}', [PricingController::class, 'show'])->name('api.pricing.show');
 
-    Route::post('/invitations',                       [InvitationController::class, 'invite']);
-    Route::delete('/invitations/{invitation}/revoke', [InvitationController::class, 'revoke']);
+    Route::post('/invitations',                        [InvitationController::class, 'invite'])->name('api.invitations.invite');
+    Route::delete('/invitations/{invitation}/revoke',  [InvitationController::class, 'revoke'])->name('api.invitations.revoke');
 
-    Route::get('/members',           [MemberController::class, 'index']);
-    Route::patch('/members/{user}',  [MemberController::class, 'update']);
-    Route::delete('/members/{user}', [MemberController::class, 'destroy']);
+    Route::get('/members',           [MemberController::class, 'index'])->name('api.members.index');
+    Route::patch('/members/{user}',  [MemberController::class, 'update'])->name('api.members.update');
+    Route::delete('/members/{user}', [MemberController::class, 'destroy'])->name('api.members.destroy');
 });
 
 Route::post('/webhook/stripe', [WebhookController::class, 'handleWebhook'])->name('webhook.stripe');

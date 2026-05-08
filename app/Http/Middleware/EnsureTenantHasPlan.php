@@ -9,21 +9,24 @@ use Illuminate\Http\Request;
 class EnsureTenantHasPlan
 {
     public function __construct(private TenantContext $context) {}
-
-    /**
-     * Uso nas rotas:
-     *   ->middleware('plan:pro')           → exige plano pro
-     *   ->middleware('plan:pro,enterprise') → aceita pro OU enterprise
-     */
     public function handle(Request $request, Closure $next, string ...$plans): mixed
     {
         $tenant = $this->context->get();
+
+        $hasActiveBypass = $tenant->bypass_plan_limits === true
+            && (
+                $tenant->bypass_plan_limits_data_limite === null
+                || $tenant->bypass_plan_limits_data_limite->isFuture()
+            );
+        if ($hasActiveBypass) {
+            return $next($request);
+        }
 
         if (!in_array($tenant->plan, $plans)) {
             // Descobre o role do usuário autenticado neste tenant
             $role = $tenant->users()
                 ->where('user_id', auth()->id())
-                ->value('tenant_user.role'); // owner | admin | member | etc
+                ->value('tenant_user.role'); // owner | admin | member | funcionário | cliente
 
             $canManageBilling = in_array($role, ['owner', 'admin']);
 

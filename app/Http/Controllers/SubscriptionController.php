@@ -2,25 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Services\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class SubscriptionController extends Controller
 {
+    public function __construct(
+        private TenantContext $context
+    ) {}
+
     public function checkout(Request $request): JsonResponse|RedirectResponse
     {
-        $user   = $request->user();
-        $tenant = $user->defaultTenant();
+        $user = $request->user();
+        $tenant = $this->context->get();
 
-        if (!$tenant) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Nenhum tenant associado a este usuário.'], 422);
-            }
-            return redirect()->route('dashboard')->with('error', 'Nenhum tenant associado.');
-        }
-
-        // Verifica se o usuário é owner do tenant
         $isOwner = $user->tenants()
             ->wherePivot('tenant_id', $tenant->id)
             ->wherePivot('role', 'owner')
@@ -29,27 +26,48 @@ class SubscriptionController extends Controller
 
         if (!$isOwner) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Apenas o proprietário pode gerenciar a assinatura.'], 403);
+                return response()->json([
+                    'message' => 'Apenas o proprietário pode gerenciar a assinatura.',
+                ], 403);
             }
-            return redirect()->route('dashboard')->with('error', 'Apenas o proprietário pode gerenciar a assinatura.');
+
+            return redirect()
+                ->route('dashboard')
+                ->with('error', 'Apenas o proprietário pode gerenciar a assinatura.');
         }
 
         if ($tenant->subscribed('default')) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Você já possui uma assinatura ativa.'], 422);
+                return response()->json([
+                    'message' => 'Você já possui uma assinatura ativa.',
+                ], 422);
             }
-            return redirect()->route('dashboard')->with('error', 'Você já possui uma assinatura ativa.');
+
+            return redirect()
+                ->route('dashboard')
+                ->with('error', 'Você já possui uma assinatura ativa.');
         }
+
+        $successUrl = $request->expectsJson()
+            ? route('api.subscription.success', absolute: true) . '?session_id={CHECKOUT_SESSION_ID}'
+            : route('subscription.success', absolute: true) . '?session_id={CHECKOUT_SESSION_ID}';
+
+        $cancelUrl = $request->expectsJson()
+            ? route('api.subscription.cancel', absolute: true)
+            : route('subscription.cancel', absolute: true);
 
         $checkout = $tenant->newSubscription('default', config('services.stripe.price_id'))
             ->trialDays(3)
             ->checkout([
-                'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url'  => route('subscription.cancel'),
+                'success_url' => $successUrl,
+                'cancel_url'  => $cancelUrl,
             ]);
 
         if ($request->expectsJson()) {
-            return response()->json(['url' => $checkout->url]);
+            return response()->json([
+                'url'       => $checkout->url,
+                'tenant_id' => $tenant->id,
+            ]);
         }
 
         return redirect($checkout->url);
@@ -57,29 +75,35 @@ class SubscriptionController extends Controller
 
     public function success(Request $request): JsonResponse|RedirectResponse
     {
+        $tenant = $this->context->get();
+
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Pagamento realizado com sucesso!']);
+            return response()->json([
+                'message'   => 'Pagamento realizado com sucesso!',
+                'tenant_id' => $tenant->id,
+            ]);
         }
 
-        return redirect()->route('subscription.success')->with('success', 'Assinatura ativada com sucesso!');
+        return redirect()
+            ->route('dashboard')
+            ->with('success', 'Assinatura ativada com sucesso!');
     }
 
     public function cancel(Request $request): JsonResponse|RedirectResponse
     {
-        $user   = $request->user();
-        $tenant = $user->defaultTenant();
+        $tenant = $this->context->get();
 
-        if (!$tenant) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Nenhum tenant associado.'], 422);
-            }
-            return redirect()->route('subscription.cancel.view')->with('error', 'Nenhum tenant associado.');
-        }
-
-        $portalUrl = $tenant->billingPortalUrl(route('dashboard'));
+        $portalUrl = $tenant->billingPortalUrl(
+            $request->expectsJson()
+                ? route('api.tenants.index', absolute: true)
+                : route('dashboard', absolute: true)
+        );
 
         if ($request->expectsJson()) {
-            return response()->json(['url' => $portalUrl]);
+            return response()->json([
+                'url'       => $portalUrl,
+                'tenant_id' => $tenant->id,
+            ]);
         }
 
         return redirect($portalUrl);

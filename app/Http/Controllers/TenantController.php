@@ -6,6 +6,7 @@ use App\Exceptions\TenantAccessDeniedException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class TenantController extends Controller
@@ -54,17 +55,31 @@ class TenantController extends Controller
             );
         }
 
-        // Atualiza o default na pivot
-        $user->tenants()->updateExistingPivot($tenant->id, ['is_default' => true]);
+        DB::transaction(function () use ($user, $tenant) {
+            DB::table('tenant_user')
+                ->where('user_id', $user->id)
+                ->update([
+                    'is_default' => false,
+                    'updated_at' => now(),
+                ]);
 
-        // Remove o default dos outros tenants
-        $user->tenants()
-            ->wherePivot('tenant_id', '!=', $tenant->id)
-            ->each(fn($t) => $user->tenants()->updateExistingPivot($t->id, ['is_default' => false]));
+            DB::table('tenant_user')
+                ->where('user_id', $user->id)
+                ->where('tenant_id', $tenant->id)
+                ->where('status', 'active')
+                ->update([
+                    'is_default' => true,
+                    'updated_at' => now(),
+                ]);
+        });
 
         if ($request->expectsJson()) {
-            // Revoga token atual e emite novo com contexto do tenant
-            $request->user()->currentAccessToken()->delete();
+            $currentToken = $request->user()->currentAccessToken();
+
+            if ($currentToken) {
+                $currentToken->delete();
+            }
+
             $token = $user->createToken('api', ['tenant:' . $tenant->id])->plainTextToken;
 
             return response()->json([
@@ -79,7 +94,6 @@ class TenantController extends Controller
                 ],
             ]);
         }
-
 
         session(['active_tenant_id' => $tenant->id]);
 
