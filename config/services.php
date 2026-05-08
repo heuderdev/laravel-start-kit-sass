@@ -13,7 +13,9 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
-
+    'super_admin' => [
+        'email' => env('EMAIL_DONO_SASS_SUPER_ADMIN', 'super-admin@sass.com.br'),
+    ],
     'stripe' => [
         'key'      => env('STRIPE_KEY'),
         'secret'   => env('STRIPE_SECRET'),

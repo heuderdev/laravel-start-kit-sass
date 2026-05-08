@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant' => \App\Http\Middleware\ResolveTenantContext::class,
             'plan'    => \App\Http\Middleware\EnsureTenantHasPlan::class,
+            'super-admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
