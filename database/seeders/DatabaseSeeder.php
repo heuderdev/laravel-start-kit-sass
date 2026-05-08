@@ -39,8 +39,14 @@ class DatabaseSeeder extends Seeder
         );
 
         $provisioner->handle(
-            name: 'job',
-            email: 'job@gamil.com',
+            name: 'Job',
+            email: 'job@gmail.com',
+            password: 'password',
+        );
+
+        $provisioner->handle(
+            name: 'Heuder Dev',
+            email: 'heuderdev@gmail.com',
             password: 'password',
         );
     }
