@@ -21,6 +21,15 @@
                     <x-nav-link :href="route('tenants.index')" :active="request()->routeIs('tenants.index')">
                         {{ __('Empresas') }}
                     </x-nav-link>
+
+                    @role('super-admin')
+                    <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                        {{ __('Usuários') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.tenants.index')" :active="request()->routeIs('admin.tenants.*')">
+                        {{ __('Liberar Empresas') }}
+                    </x-nav-link>
+                    @endrole
                 </div>
             </div>
 

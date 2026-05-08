@@ -97,6 +97,6 @@ class TenantController extends Controller
 
         session(['active_tenant_id' => $tenant->id]);
 
-        return redirect()->back();
+        return redirect()->back()->with('success', "Tenant switched to [{$tenant->name}].");
     }
 }

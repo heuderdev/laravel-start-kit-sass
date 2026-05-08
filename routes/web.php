@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\SuperAdminTenantController;
+use App\Http\Controllers\Admin\SuperAdminUserController;
+use App\Http\Controllers\CookieController;
+use App\Http\Controllers\CookiePreferenceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\MemberController;
@@ -55,3 +59,25 @@ Route::get('/tenant/inactive', function () {
 })->name('tenant.inactive');
 
 require __DIR__ . '/auth.php';
+
+Route::middleware(['auth', 'super-admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/tenants', [SuperAdminTenantController::class, 'index'])->name('tenants.index');
+    Route::get('/tenants/{tenant}/edit', [SuperAdminTenantController::class, 'edit'])->name('tenants.edit');
+    Route::match(['put', 'patch'], '/tenants/{tenant}/bypass', [SuperAdminTenantController::class, 'updateBypass'])->name('tenants.bypass.update');
+});
+
+
+Route::middleware(['auth', 'super-admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/users', [SuperAdminUserController::class, 'index'])->name('users.index');
+    Route::post('/users/{user}/promote-super-admin', [SuperAdminUserController::class, 'promote'])->name('users.promote-super-admin');
+    Route::delete('/users/{user}/revoke-super-admin', [SuperAdminUserController::class, 'revoke'])->name('users.revoke-super-admin');
+});
+
+
+Route::middleware(['auth', 'tenant', 'super-admin'])->group(function () {
+    Route::get('/cookies', [CookiePreferenceController::class, 'index'])->name('cookies.index');
+    Route::post('/cookies', [CookiePreferenceController::class, 'store'])->name('cookies.store');
+    Route::patch('/cookies', [CookiePreferenceController::class, 'update'])->name('cookies.update');
+    Route::post('/cookies/renew', [CookiePreferenceController::class, 'renew'])->name('cookies.renew');
+    Route::delete('/cookies', [CookiePreferenceController::class, 'destroy'])->name('cookies.destroy');
+});

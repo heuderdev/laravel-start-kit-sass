@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\SuperAdminTenantController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\CookiePreferenceController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PricingController;
@@ -42,3 +44,20 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
 });
 
 Route::post('/webhook/stripe', [WebhookController::class, 'handleWebhook'])->name('webhook.stripe');
+
+
+Route::middleware(['auth:sanctum'])->prefix('admin')->name('api.admin.')->group(function () {
+    Route::get('/tenants', [SuperAdminTenantController::class, 'index'])->name('tenants.index');
+    Route::get('/tenants/{tenant}', [SuperAdminTenantController::class, 'edit'])->name('tenants.show');
+    Route::match(['put', 'patch'], '/tenants/{tenant}/bypass', [SuperAdminTenantController::class, 'updateBypass'])
+        ->name('tenants.bypass.update');
+});
+
+
+Route::middleware(['auth:sanctum', 'tenant', 'super-admin'])->group(function () {
+    Route::get('/cookies', [CookiePreferenceController::class, 'index'])->name('api.cookies.index');
+    Route::post('/cookies', [CookiePreferenceController::class, 'store'])->name('api.cookies.store');
+    Route::patch('/cookies', [CookiePreferenceController::class, 'update'])->name('api.cookies.update');
+    Route::post('/cookies/renew', [CookiePreferenceController::class, 'renew'])->name('api.cookies.renew');
+    Route::delete('/cookies', [CookiePreferenceController::class, 'destroy'])->name('api.cookies.destroy');
+});

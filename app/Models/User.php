@@ -9,12 +9,13 @@ use Illuminate\Notifications\Notifiable;
 use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     protected $hidden = ['password', 'two_factor_secret', 'two_factor_recovery_codes', 'email_verified_at', 'deleted_at', 'remember_token'];
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, HasRoles;
     protected $guarded = ['id'];
     /**
      * Get the attributes that should be cast.
