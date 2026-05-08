@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\PricingController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\WebhookController;
@@ -29,5 +30,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/subscription/success',   [SubscriptionController::class, 'success']);
     Route::get('/subscription/cancel',    [SubscriptionController::class, 'cancel']);
 });
-
+Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+    Route::get('/pricing',        [PricingController::class, 'index'])->name('api.pricing.index');
+    Route::get('/pricing/{plan}', [PricingController::class, 'show'])->name('api.pricing.show');
+});
 Route::post('/webhook/stripe', [WebhookController::class, 'handleWebhook'])->name('webhook.stripe');

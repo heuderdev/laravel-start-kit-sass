@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PricingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TenantController;
@@ -28,6 +29,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
     Route::get('/subscription/success',   [SubscriptionController::class, 'success'])->name('subscription.success');
     Route::get('/subscription/cancel',    [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+});
+
+Route::middleware(['auth', 'tenant'])->group(function () {
+    Route::get('/pricing',        [PricingController::class, 'index'])->name('pricing.index');
+    Route::get('/pricing/{plan}', [PricingController::class, 'show'])->name('pricing.show');
 });
 
 require __DIR__ . '/auth.php';
