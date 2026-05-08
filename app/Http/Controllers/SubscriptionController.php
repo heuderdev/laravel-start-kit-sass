@@ -61,7 +61,7 @@ class SubscriptionController extends Controller
             return response()->json(['message' => 'Pagamento realizado com sucesso!']);
         }
 
-        return redirect()->route('dashboard')->with('success', 'Assinatura ativada com sucesso!');
+        return redirect()->route('subscription.success')->with('success', 'Assinatura ativada com sucesso!');
     }
 
     public function cancel(Request $request): JsonResponse|RedirectResponse
@@ -73,7 +73,7 @@ class SubscriptionController extends Controller
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Nenhum tenant associado.'], 422);
             }
-            return redirect()->route('dashboard')->with('error', 'Nenhum tenant associado.');
+            return redirect()->route('subscription.cancel.view')->with('error', 'Nenhum tenant associado.');
         }
 
         $portalUrl = $tenant->billingPortalUrl(route('dashboard'));
