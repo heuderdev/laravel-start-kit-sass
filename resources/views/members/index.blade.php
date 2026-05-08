@@ -36,7 +36,7 @@
                 <input type="email" name="email" placeholder="E-mail do convidado" required
                     class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                 <select name="role"
-                    class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    class="border border-gray-300 rounded-lg px-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                     <option value="member">Member</option>
                     <option value="admin">Admin</option>
                     <option value="funcionario">Funcionário</option>
@@ -81,6 +81,11 @@
                             <option value="member" {{ $member->pivot->role === 'member' ? 'selected' : '' }}>Member
                             </option>
                             <option value="admin" {{ $member->pivot->role === 'admin' ? 'selected' : '' }}>Admin
+                            </option>
+                            <option value="funcionario" {{ $member->pivot->role === 'funcionario' ? 'selected' : '' }}>
+                                Funcionário
+                            </option>
+                            <option value="cliente" {{ $member->pivot->role === 'cliente' ? 'selected' : '' }}>Cliente
                             </option>
                         </select>
                     </form>
