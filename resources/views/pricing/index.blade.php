@@ -9,11 +9,8 @@
 
     <div class="py-6">
         <div class="max-w-4xl mx-auto w-full space-y-6 sm:px-6 lg:px-8">
-            @if(session('warning'))
-            <div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded text-center">
-                {{ session('warning') }}
-            </div>
-            @endif
+
+            <x-flash-messages />
 
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 @foreach($plans as $plan)

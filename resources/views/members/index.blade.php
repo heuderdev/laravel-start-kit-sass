@@ -14,16 +14,7 @@
     <div class="py-6">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
 
-            @foreach (['success', 'error', 'info'] as $flash)
-            @if (session($flash))
-            <div class="mb-4 px-4 py-3 rounded-lg border
-                        {{ $flash === 'success' ? 'bg-green-50 border-green-400 text-green-800' : '' }}
-                        {{ $flash === 'error' ? 'bg-red-50 border-red-400 text-red-800' : '' }}
-                        {{ $flash === 'info' ? 'bg-blue-50 border-blue-400 text-blue-800' : '' }}">
-                {{ session($flash) }}
-            </div>
-            @endif
-            @endforeach
+            <x-flash-messages />
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 border-b border-gray-200">
