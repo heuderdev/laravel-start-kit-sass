@@ -15,7 +15,7 @@ class EnsureTenantHasPlan
     public function handle(Request $request, Closure $next, string ...$plans): mixed
     {
         $tenant = $this->context->get();
-        $user = $request->user();
+        $user   = $request->user();
 
         $hasActiveBypass = $tenant->bypass_plan_limits === true
             && (
@@ -27,15 +27,16 @@ class EnsureTenantHasPlan
             return $next($request);
         }
 
-        $canManageBilling = $user?->hasAnyRole(['owner', 'admin']) ?? false;
+        $canManageBilling = $user !== null
+            && $user->hasAnyRoleInTenant(['owner', 'admin'], $tenant);
 
         if (!in_array($tenant->plan, $plans, true)) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'type' => 'https://httpstatuses.io/403',
-                    'title' => $canManageBilling ? 'Plan upgrade required' : 'Tenant inactive',
-                    'status' => 403,
-                    'detail' => $canManageBilling
+                    'type'    => 'https://httpstatuses.io/403',
+                    'title'   => $canManageBilling ? 'Plan upgrade required' : 'Tenant inactive',
+                    'status'  => 403,
+                    'detail'  => $canManageBilling
                         ? 'Your current plan does not have access to this resource.'
                         : 'The organization you belong to does not have an active plan.',
                     'current' => $tenant->plan,
@@ -60,14 +61,12 @@ class EnsureTenantHasPlan
                 || $tenant->onGenericTrial();
 
             if (!$isActive) {
-                $tenant->update([
-                    'plan' => 'free',
-                ]);
+                $tenant->update(['plan' => 'free']);
 
                 if ($request->expectsJson()) {
                     return response()->json([
-                        'type' => 'https://httpstatuses.io/403',
-                        'title' => 'Subscription inactive',
+                        'type'   => 'https://httpstatuses.io/403',
+                        'title'  => 'Subscription inactive',
                         'status' => 403,
                         'detail' => 'Your subscription is no longer active.',
                     ], 403);

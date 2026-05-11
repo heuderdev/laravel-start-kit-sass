@@ -2,33 +2,36 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\Tenant;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    protected $hidden = ['password', 'two_factor_secret', 'two_factor_recovery_codes', 'email_verified_at', 'deleted_at', 'remember_token'];
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, HasRoles;
+    use HasFactory, Notifiable, HasApiTokens;
+
     protected $guarded = ['id'];
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+
+    protected $hidden = [
+        'password',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'email_verified_at',
+        'deleted_at',
+        'remember_token',
+    ];
+
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'two_factor_enabled' => 'boolean',
-            'two_factor_recovery_codes' => 'array',
+            'email_verified_at'          => 'datetime',
+            'password'                   => 'hashed',
+            'two_factor_enabled'         => 'boolean',
+            'two_factor_recovery_codes'  => 'array',
+            'is_super_admin'             => 'boolean',
         ];
     }
 
@@ -53,5 +56,27 @@ class User extends Authenticatable
             ->wherePivot('tenant_id', $tenantId)
             ->wherePivot('status', 'active')
             ->exists();
+    }
+
+    public function roleInTenant(Tenant $tenant): ?string
+    {
+        return $this->tenants()
+            ->wherePivot('tenant_id', $tenant->id)
+            ->wherePivot('status', 'active')
+            ->value('tenant_user.role');
+    }
+
+    public function hasRoleInTenant(string $role, Tenant $tenant): bool
+    {
+        return $this->roleInTenant($tenant) === $role;
+    }
+
+    public function hasAnyRoleInTenant(array $roles, Tenant $tenant): bool
+    {
+        return in_array($this->roleInTenant($tenant), $roles, true);
+    }
+    public function isSuperAdmin(): bool
+    {
+        return (bool) $this->is_super_admin;
     }
 }

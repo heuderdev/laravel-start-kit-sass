@@ -20,7 +20,7 @@ class ResolveTenantContext
 
     public function handle(Request $request, Closure $next): mixed
     {
-        $user = $request->user();
+        $user     = $request->user();
         $tenantId = $this->resolveTenantId($request);
 
         if ($tenantId === null) {
@@ -72,8 +72,8 @@ class ResolveTenantContext
         if (!$user) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'type' => 'https://httpstatuses.io/401',
-                    'title' => 'Unauthenticated',
+                    'type'   => 'https://httpstatuses.io/401',
+                    'title'  => 'Unauthenticated',
                     'status' => Response::HTTP_UNAUTHORIZED,
                     'detail' => 'Usuário não autenticado.',
                 ], Response::HTTP_UNAUTHORIZED);
@@ -93,10 +93,10 @@ class ResolveTenantContext
 
             return $request->expectsJson()
                 ? response()->json([
-                    'type' => 'https://httpstatuses.io/428',
-                    'title' => 'Tenant header required',
-                    'status' => 428,
-                    'detail' => 'Envie o header X-Tenant-ID nas requisições de API.',
+                    'type'              => 'https://httpstatuses.io/428',
+                    'title'             => 'Tenant header required',
+                    'status'            => 428,
+                    'detail'            => 'Envie o header X-Tenant-ID nas requisições de API.',
                     'default_tenant_id' => $defaultTenant->id,
                 ], 428)
                 : redirect()->route('dashboard');
@@ -104,8 +104,8 @@ class ResolveTenantContext
 
         if ($request->expectsJson()) {
             return response()->json([
-                'type' => 'https://httpstatuses.io/422',
-                'title' => 'Tenant not identified',
+                'type'   => 'https://httpstatuses.io/422',
+                'title'  => 'Tenant not identified',
                 'status' => 422,
                 'detail' => 'Nenhum tenant ativo foi identificado para a requisição.',
             ], 422);

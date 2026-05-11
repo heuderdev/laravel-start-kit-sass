@@ -13,14 +13,11 @@ class DatabaseSeeder extends Seeder
 
     public function run(ProvisionNewAccount $provisioner): void
     {
-        $this->call([
-            RolesAndPermissionsSeeder::class,
-        ]);
-
         $provisioner->handle(
             name: 'SUPER ADMINISTRADOR',
             email: 'super-admin@sass.com.br',
             password: 'password',
+            is_super_admin: true
         );
 
         $provisioner->handle(

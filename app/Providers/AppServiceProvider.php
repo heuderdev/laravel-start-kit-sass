@@ -4,40 +4,45 @@ namespace App\Providers;
 
 use App\Models\Tenant;
 use App\Models\User;
-use App\Services\TenantContext;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Cashier\Cashier;
-use Spatie\Permission\PermissionRegistrar;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(TenantContext::class);
+        //
     }
 
     public function boot(): void
     {
-        Cashier::useCustomerModel(Tenant::class);
+        $this->registerTenantGates();
+    }
 
-        Gate::before(function (User $user, string $ability): ?bool {
-            $permissionRegistrar = app(PermissionRegistrar::class);
-            $currentTeamId = $permissionRegistrar->getPermissionsTeamId();
+    private function registerTenantGates(): void
+    {
+        // Apenas o owner
+        Gate::define('tenant.owner', function (User $user, Tenant $tenant): bool {
+            return $user->hasRoleInTenant('owner', $tenant);
+        });
 
-            $permissionRegistrar->setPermissionsTeamId(null);
+        // Owner ou admin
+        Gate::define('tenant.admin', function (User $user, Tenant $tenant): bool {
+            return $user->hasAnyRoleInTenant(['owner', 'admin'], $tenant);
+        });
 
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
+        // Qualquer membro ativo do tenant
+        Gate::define('tenant.member', function (User $user, Tenant $tenant): bool {
+            return $user->belongsToTenant($tenant->id);
+        });
 
-            $isSuperAdmin = $user->hasRole('super-admin');
+        // Super admin global — bypass de todos os gates
+        Gate::before(function (User $user): ?bool {
+            if ($user->isSuperAdmin()) {
+                return true;
+            }
 
-            $permissionRegistrar->setPermissionsTeamId($currentTeamId);
-
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-
-            return $isSuperAdmin ? true : null;
+            return null;
         });
     }
 }

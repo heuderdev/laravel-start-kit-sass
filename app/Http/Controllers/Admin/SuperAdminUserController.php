@@ -8,19 +8,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\PermissionRegistrar;
 
 class SuperAdminUserController extends Controller
 {
-    public function __construct(
-        private readonly PermissionRegistrar $permissionRegistrar,
-    ) {}
-
     public function index(Request $request): View|JsonResponse
     {
         $users = User::query()
-            ->select(['id', 'name', 'email', 'created_at'])
+            ->select(['id', 'name', 'email', 'is_super_admin', 'created_at'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = trim((string) $request->input('search'));
 
@@ -35,15 +29,13 @@ class SuperAdminUserController extends Controller
             })
             ->orderByDesc('id')
             ->paginate(20)
-            ->through(function (User $user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'created_at' => $user->created_at,
-                    'is_super_admin' => $this->userHasGlobalSuperAdminRole($user),
-                ];
-            })
+            ->through(fn(User $user) => [
+                'id'             => $user->id,
+                'name'           => $user->name,
+                'email'          => $user->email,
+                'created_at'     => $user->created_at,
+                'is_super_admin' => $user->isSuperAdmin(),
+            ])
             ->withQueryString();
 
         if ($request->expectsJson()) {
@@ -51,7 +43,7 @@ class SuperAdminUserController extends Controller
         }
 
         return view('admin.users.index', [
-            'users' => $users,
+            'users'   => $users,
             'filters' => [
                 'search' => (string) $request->input('search', ''),
             ],
@@ -60,28 +52,16 @@ class SuperAdminUserController extends Controller
 
     public function promote(Request $request, User $user): JsonResponse|RedirectResponse
     {
-        $this->runWithoutTeamContext(function () use ($user): void {
-            Role::findOrCreate('super-admin', 'web');
-
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-
-            if (!$user->hasRole('super-admin')) {
-                $user->assignRole('super-admin');
-            }
-
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-        });
+        $user->update(['is_super_admin' => true]);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Usuário promovido para super-admin com sucesso.',
-                'data' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'roles' => $this->getGlobalRoleNames($user),
+                'data'    => [
+                    'id'             => $user->id,
+                    'name'           => $user->name,
+                    'email'          => $user->email,
+                    'is_super_admin' => true,
                 ],
             ]);
         }
@@ -120,26 +100,16 @@ class SuperAdminUserController extends Controller
                 ->with('error', 'Você não pode remover o papel de super-admin deste usuário protegido.');
         }
 
-        $this->runWithoutTeamContext(function () use ($user): void {
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-
-            if ($user->hasRole('super-admin')) {
-                $user->removeRole('super-admin');
-            }
-
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-        });
+        $user->update(['is_super_admin' => false]);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Papel de super-admin removido com sucesso.',
-                'data' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'roles' => $this->getGlobalRoleNames($user),
+                'data'    => [
+                    'id'             => $user->id,
+                    'name'           => $user->name,
+                    'email'          => $user->email,
+                    'is_super_admin' => false,
                 ],
             ]);
         }
@@ -147,38 +117,5 @@ class SuperAdminUserController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Papel de super-admin removido com sucesso.');
-    }
-
-    private function userHasGlobalSuperAdminRole(User $user): bool
-    {
-        return $this->runWithoutTeamContext(function () use ($user): bool {
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-
-            return $user->hasRole('super-admin');
-        });
-    }
-
-    private function getGlobalRoleNames(User $user): array
-    {
-        return $this->runWithoutTeamContext(function () use ($user): array {
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-
-            return $user->getRoleNames()->values()->all();
-        });
-    }
-
-    private function runWithoutTeamContext(callable $callback): mixed
-    {
-        $currentTeamId = $this->permissionRegistrar->getPermissionsTeamId();
-
-        try {
-            $this->permissionRegistrar->setPermissionsTeamId(null);
-
-            return $callback();
-        } finally {
-            $this->permissionRegistrar->setPermissionsTeamId($currentTeamId);
-        }
     }
 }

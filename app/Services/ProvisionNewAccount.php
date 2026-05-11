@@ -14,13 +14,14 @@ class ProvisionNewAccount
         private readonly TenantMembershipService $tenantMembershipService,
     ) {}
 
-    public function handle(string $name, string $email, ?string $password = null): User
+    public function handle(string $name, string $email, ?string $password = null, bool $is_super_admin = false): User
     {
-        return DB::transaction(function () use ($name, $email, $password): User {
+        return DB::transaction(function () use ($name, $email, $password, $is_super_admin): User {
             $user = User::create([
                 'name' => $name,
                 'email' => $email,
                 'password' => $password,
+                'is_super_admin' => $is_super_admin,
             ]);
 
             $tenant = Tenant::create([

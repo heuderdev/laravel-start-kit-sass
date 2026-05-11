@@ -29,12 +29,7 @@ class MemberController extends Controller
             ->orderByPivot('joined_at', 'asc')
             ->get()
             ->each(function (User $member) use ($tenant): void {
-                $this->context->set($tenant);
-
-                $member->unsetRelation('roles');
-                $member->unsetRelation('permissions');
-
-                $member->setAttribute('tenant_role', $member->getRoleNames()->first());
+                $member->setAttribute('tenant_role', $member->roleInTenant($tenant));
             });
 
         if ($request->expectsJson()) {
@@ -48,46 +43,21 @@ class MemberController extends Controller
 
     public function update(UpdateMemberRequest $request, User $user): JsonResponse|RedirectResponse
     {
-        $tenant = $this->context->get();
+        $tenant    = $this->context->get();
         $requester = $request->user();
 
         $this->ensureOwner($requester, $request);
 
         if ($requester->id === $user->id) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Você não pode alterar seu próprio papel.',
-                ], 422);
-            }
-
-            return back()->with('error', 'Você não pode alterar seu próprio papel.');
+            return $this->respondError($request, 'Você não pode alterar seu próprio papel.', 422);
         }
 
         if (!$user->belongsToTenant($tenant->id)) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Usuário não pertence a este workspace.',
-                ], 404);
-            }
-
-            return back()->with('error', 'Usuário não pertence a este workspace.');
+            return $this->respondError($request, 'Usuário não pertence a este workspace.', 404);
         }
 
-        $this->context->set($tenant);
-
-        $user->unsetRelation('roles');
-        $user->unsetRelation('permissions');
-
-        $targetRole = $user->getRoleNames()->first();
-
-        if ($targetRole === 'owner') {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Não é possível alterar o papel do proprietário.',
-                ], 422);
-            }
-
-            return back()->with('error', 'Não é possível alterar o papel do proprietário.');
+        if ($user->hasRoleInTenant('owner', $tenant)) {
+            return $this->respondError($request, 'Não é possível alterar o papel do proprietário.', 422);
         }
 
         $this->membershipService->syncUserRoleInTenant(
@@ -97,9 +67,7 @@ class MemberController extends Controller
         );
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Papel atualizado com sucesso.',
-            ]);
+            return response()->json(['message' => 'Papel atualizado com sucesso.']);
         }
 
         return back()->with('success', 'Papel do membro atualizado.');
@@ -107,57 +75,27 @@ class MemberController extends Controller
 
     public function destroy(Request $request, User $user): JsonResponse|RedirectResponse
     {
-        $tenant = $this->context->get();
+        $tenant    = $this->context->get();
         $requester = $request->user();
 
         $this->ensureOwner($requester, $request);
 
         if ($requester->id === $user->id) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Você não pode remover a si mesmo.',
-                ], 422);
-            }
-
-            return back()->with('error', 'Você não pode remover a si mesmo.');
+            return $this->respondError($request, 'Você não pode remover a si mesmo.', 422);
         }
 
         if (!$user->belongsToTenant($tenant->id)) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Usuário não pertence a este workspace.',
-                ], 404);
-            }
-
-            return back()->with('error', 'Usuário não pertence a este workspace.');
+            return $this->respondError($request, 'Usuário não pertence a este workspace.', 404);
         }
 
-        $this->context->set($tenant);
-
-        $user->unsetRelation('roles');
-        $user->unsetRelation('permissions');
-
-        $targetRole = $user->getRoleNames()->first();
-
-        if ($targetRole === 'owner') {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Não é possível remover o proprietário do workspace.',
-                ], 422);
-            }
-
-            return back()->with('error', 'Não é possível remover o proprietário.');
+        if ($user->hasRoleInTenant('owner', $tenant)) {
+            return $this->respondError($request, 'Não é possível remover o proprietário do workspace.', 422);
         }
 
-        $this->membershipService->detachUserFromTenant(
-            user: $user,
-            tenant: $tenant,
-        );
+        $this->membershipService->detachUserFromTenant(user: $user, tenant: $tenant);
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Membro removido com sucesso.',
-            ]);
+            return response()->json(['message' => 'Membro removido com sucesso.']);
         }
 
         return back()->with('success', 'Membro removido do workspace.');
@@ -165,7 +103,7 @@ class MemberController extends Controller
 
     private function ensureOwner(User $user, Request $request): void
     {
-        if ($user->hasRole('owner')) {
+        if ($user->hasRoleInTenant('owner', $this->context->get())) {
             return;
         }
 
@@ -176,5 +114,14 @@ class MemberController extends Controller
         }
 
         abort(403, 'Apenas o proprietário pode gerenciar membros.');
+    }
+
+    private function respondError(Request $request, string $message, int $status): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message], $status);
+        }
+
+        return back()->with('error', $message);
     }
 }

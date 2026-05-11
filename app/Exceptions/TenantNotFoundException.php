@@ -12,7 +12,7 @@ class TenantNotFoundException extends Exception
 {
     public function __construct(
         string $message = 'Tenant não encontrado.',
-        int $code = Response::HTTP_NOT_FOUND
+        int $code = Response::HTTP_NOT_FOUND,
     ) {
         parent::__construct($message, $code);
     }
@@ -21,8 +21,8 @@ class TenantNotFoundException extends Exception
     {
         if ($request->expectsJson()) {
             return response()->json([
-                'type' => 'https://httpstatuses.io/404',
-                'title' => 'Tenant Not Found',
+                'type'   => 'https://httpstatuses.io/404',
+                'title'  => 'Tenant Not Found',
                 'status' => Response::HTTP_NOT_FOUND,
                 'detail' => $this->getMessage(),
             ], Response::HTTP_NOT_FOUND);
@@ -30,6 +30,6 @@ class TenantNotFoundException extends Exception
 
         return redirect()
             ->route('tenants.index')
-            ->with('error', $this->getMessage());
+            ->with('error', 'Workspace não encontrado. Selecione um workspace para continuar.');
     }
 }

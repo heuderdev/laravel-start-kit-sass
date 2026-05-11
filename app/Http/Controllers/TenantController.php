@@ -25,21 +25,16 @@ class TenantController extends Controller
             ->wherePivot('status', 'active')
             ->orderByPivot('is_default', 'desc')
             ->get()
-            ->map(function ($tenant) {
-                $this->context->set($tenant);
-
-                auth()->user()?->unsetRelation('roles');
-                auth()->user()?->unsetRelation('permissions');
-
+            ->map(function ($tenant) use ($request) {
                 return [
-                    'id' => $tenant->id,
-                    'name' => $tenant->name,
-                    'slug' => $tenant->slug,
-                    'logo_url' => $tenant->logo_url,
-                    'plan' => $tenant->plan,
-                    'role' => auth()->user()?->getRoleNames()->first(),
+                    'id'         => $tenant->id,
+                    'name'       => $tenant->name,
+                    'slug'       => $tenant->slug,
+                    'logo_url'   => $tenant->logo_url,
+                    'plan'       => $tenant->plan,
+                    'role'       => $request->user()->roleInTenant($tenant),
                     'is_default' => (bool) $tenant->pivot->is_default,
-                    'joined_at' => $tenant->pivot->joined_at,
+                    'joined_at'  => $tenant->pivot->joined_at,
                 ];
             });
 
@@ -78,13 +73,13 @@ class TenantController extends Controller
             $token = $user->createToken('api', ['tenant:' . $tenant->id])->plainTextToken;
 
             return response()->json([
-                'token' => $token,
+                'token'     => $token,
                 'tenant_id' => $tenant->id,
-                'tenant' => [
-                    'id' => $tenant->id,
-                    'name' => $tenant->name,
-                    'slug' => $tenant->slug,
-                    'plan' => $tenant->plan,
+                'tenant'    => [
+                    'id'      => $tenant->id,
+                    'name'    => $tenant->name,
+                    'slug'    => $tenant->slug,
+                    'plan'    => $tenant->plan,
                     'logo_url' => $tenant->logo_url,
                 ],
             ]);

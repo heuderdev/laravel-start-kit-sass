@@ -23,9 +23,9 @@ class InvitationController extends Controller
     public function invite(InviteRequest $request): JsonResponse|RedirectResponse
     {
         $tenant = $this->context->get();
-        $user = $request->user();
+        $user   = $request->user();
 
-        if (!$user->hasRole('owner')) {
+        if (!$user->hasRoleInTenant('owner', $tenant)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Apenas o proprietário pode convidar membros.',
@@ -56,19 +56,17 @@ class InvitationController extends Controller
             ->delete();
 
         $invitation = TenantInvitation::create([
-            'tenant_id' => $tenant->id,
-            'email' => $request->email,
-            'role' => $request->role,
-            'token' => (string) Str::uuid(),
+            'tenant_id'  => $tenant->id,
+            'email'      => $request->email,
+            'role'       => $request->role,
+            'token'      => (string) Str::uuid(),
             'expires_at' => now()->addDays(7),
         ]);
 
         Mail::to($invitation->email)->send(new TenantInvitationMail($invitation));
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Convite enviado com sucesso.',
-            ], 201);
+            return response()->json(['message' => 'Convite enviado com sucesso.'], 201);
         }
 
         return back()->with('success', 'Convite enviado com sucesso.');
@@ -83,14 +81,10 @@ class InvitationController extends Controller
 
         if (!$invitation || $invitation->isExpired()) {
             if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Convite inválido ou expirado.',
-                ], 410);
+                return response()->json(['message' => 'Convite inválido ou expirado.'], 410);
             }
 
-            return redirect()
-                ->route('welcome')
-                ->with('error', 'Convite inválido ou expirado.');
+            return redirect()->route('welcome')->with('error', 'Convite inválido ou expirado.');
         }
 
         if (!$request->user()) {
@@ -98,18 +92,13 @@ class InvitationController extends Controller
 
             return redirect()
                 ->route('register')
-                ->with(
-                    'info',
-                    'Crie sua conta para aceitar o convite de ' . $invitation->tenant->name
-                );
+                ->with('info', 'Crie sua conta para aceitar o convite de ' . $invitation->tenant->name);
         }
 
         $user = $request->user();
 
         if ($user->belongsToTenant($invitation->tenant_id)) {
-            $invitation->update([
-                'accepted_at' => now(),
-            ]);
+            $invitation->update(['accepted_at' => now()]);
 
             $this->membershipService->syncUserRoleInTenant(
                 user: $user,
@@ -136,14 +125,10 @@ class InvitationController extends Controller
             status: 'active',
         );
 
-        $invitation->update([
-            'accepted_at' => now(),
-        ]);
+        $invitation->update(['accepted_at' => now()]);
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Convite aceito com sucesso.',
-            ]);
+            return response()->json(['message' => 'Convite aceito com sucesso.']);
         }
 
         return redirect()
@@ -154,7 +139,7 @@ class InvitationController extends Controller
     public function revoke(Request $request, TenantInvitation $invitation): JsonResponse|RedirectResponse
     {
         $tenant = $this->context->get();
-        $user = $request->user();
+        $user   = $request->user();
 
         if ($invitation->tenant_id !== $tenant->id) {
             if ($request->expectsJson()) {
@@ -166,7 +151,7 @@ class InvitationController extends Controller
             abort(403, 'Este convite não pertence ao tenant ativo.');
         }
 
-        if (!$user->hasRole('owner')) {
+        if (!$user->hasRoleInTenant('owner', $tenant)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Apenas o proprietário pode revogar convites.',
@@ -189,9 +174,7 @@ class InvitationController extends Controller
         $invitation->deleteOrFail();
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Convite revogado com sucesso.',
-            ]);
+            return response()->json(['message' => 'Convite revogado com sucesso.']);
         }
 
         return back()->with('success', 'Convite revogado.');

@@ -6,8 +6,6 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\PermissionRegistrar;
 
 class TenantMembershipService
 {
@@ -17,11 +15,6 @@ class TenantMembershipService
         'member',
         'client',
     ];
-
-    public function __construct(
-        private readonly TenantContext $tenantContext,
-        private readonly PermissionRegistrar $permissionRegistrar,
-    ) {}
 
     public function attachUserToTenant(
         User $user,
@@ -33,42 +26,28 @@ class TenantMembershipService
         $this->ensureValidRole($role);
 
         DB::transaction(function () use ($user, $tenant, $role, $isDefault, $status): void {
-            $membership = $user->tenants()
+            $exists = $user->tenants()
                 ->where('tenant_id', $tenant->id)
-                ->first();
+                ->exists();
 
-            if (!$membership) {
-                if ($isDefault) {
-                    $this->unsetDefaultTenant($user);
-                }
-
-                $user->tenants()->attach($tenant->id, [
-                    'role' => $role, // compatibilidade temporária
-                    'is_default' => $isDefault,
-                    'status' => $status,
-                    'joined_at' => now(),
-                ]);
-            } else {
-                if ($isDefault) {
-                    $this->unsetDefaultTenant($user);
-                }
-
-                $user->tenants()->updateExistingPivot($tenant->id, [
-                    'role' => $role, // compatibilidade temporária
-                    'is_default' => $isDefault,
-                    'status' => $status,
-                ]);
+            if ($isDefault) {
+                $this->unsetDefaultTenant($user);
             }
 
-            $this->tenantContext->set($tenant);
-            $this->ensureTenantRolesExist();
-
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-
-            $user->syncRoles([$role]);
-
-            $this->permissionRegistrar->forgetCachedPermissions();
+            if (!$exists) {
+                $user->tenants()->attach($tenant->id, [
+                    'role'       => $role,
+                    'is_default' => $isDefault,
+                    'status'     => $status,
+                    'joined_at'  => now(),
+                ]);
+            } else {
+                $user->tenants()->updateExistingPivot($tenant->id, [
+                    'role'       => $role,
+                    'is_default' => $isDefault,
+                    'status'     => $status,
+                ]);
+            }
         });
     }
 
@@ -80,62 +59,31 @@ class TenantMembershipService
         $this->ensureValidRole($role);
 
         DB::transaction(function () use ($user, $tenant, $role): void {
-            $belongsToTenant = $user->tenants()
-                ->where('tenant_id', $tenant->id)
-                ->exists();
-
-            if (!$belongsToTenant) {
+            if (!$user->tenants()->where('tenant_id', $tenant->id)->exists()) {
                 throw new InvalidArgumentException('O usuário não pertence ao tenant informado.');
             }
 
             $user->tenants()->updateExistingPivot($tenant->id, [
-                'role' => $role, // compatibilidade temporária
+                'role' => $role,
             ]);
-
-            $this->tenantContext->set($tenant);
-            $this->ensureTenantRolesExist();
-
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-
-            $user->syncRoles([$role]);
-
-            $this->permissionRegistrar->forgetCachedPermissions();
         });
     }
 
     public function detachUserFromTenant(User $user, Tenant $tenant): void
     {
         DB::transaction(function () use ($user, $tenant): void {
-            $belongsToTenant = $user->tenants()
-                ->where('tenant_id', $tenant->id)
-                ->exists();
-
-            if (!$belongsToTenant) {
+            if (!$user->tenants()->where('tenant_id', $tenant->id)->exists()) {
                 return;
             }
 
-            $this->tenantContext->set($tenant);
-
-            $user->unsetRelation('roles');
-            $user->unsetRelation('permissions');
-
-            $user->syncRoles([]);
-
             $user->tenants()->detach($tenant->id);
-
-            $this->permissionRegistrar->forgetCachedPermissions();
         });
     }
 
     public function setDefaultTenant(User $user, Tenant $tenant): void
     {
         DB::transaction(function () use ($user, $tenant): void {
-            $belongsToTenant = $user->tenants()
-                ->where('tenant_id', $tenant->id)
-                ->exists();
-
-            if (!$belongsToTenant) {
+            if (!$user->tenants()->where('tenant_id', $tenant->id)->exists()) {
                 throw new InvalidArgumentException('O usuário não pertence ao tenant informado.');
             }
 
@@ -147,21 +95,12 @@ class TenantMembershipService
         });
     }
 
-    private function ensureTenantRolesExist(): void
-    {
-        foreach (self::ALLOWED_ROLES as $role) {
-            Role::findOrCreate($role, 'web');
-        }
-    }
-
     private function unsetDefaultTenant(User $user): void
     {
         $user->tenants()
             ->newPivotStatement()
             ->where('user_id', $user->id)
-            ->update([
-                'is_default' => false,
-            ]);
+            ->update(['is_default' => false]);
     }
 
     private function ensureValidRole(string $role): void
