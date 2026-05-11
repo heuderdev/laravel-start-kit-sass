@@ -16,10 +16,13 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     <x-nav-link :href="route('pricing.index')" :active="request()->routeIs('pricing.index')">
-                        {{ __('Preços') }}
+                        {{ __('Assinatura') }}
                     </x-nav-link>
                     <x-nav-link :href="route('tenants.index')" :active="request()->routeIs('tenants.index')">
                         {{ __('Empresas') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('members.index')" :active="request()->routeIs('members.*')">
+                        {{ __('Membros') }}
                     </x-nav-link>
 
                     @role('super-admin')
