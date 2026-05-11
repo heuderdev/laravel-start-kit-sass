@@ -21,15 +21,15 @@ class TenantAccessDeniedException extends Exception
     {
         if ($request->expectsJson()) {
             return response()->json([
-                'type'   => 'https://httpstatuses.io/403',
-                'title'  => 'Tenant Access Denied',
+                'type' => 'https://httpstatuses.io/403',
+                'title' => 'Tenant Access Denied',
                 'status' => Response::HTTP_FORBIDDEN,
                 'detail' => $this->getMessage(),
             ], Response::HTTP_FORBIDDEN);
         }
 
         return redirect()
-            ->back()
+            ->route('tenants.index')
             ->with('error', $this->getMessage());
     }
 }

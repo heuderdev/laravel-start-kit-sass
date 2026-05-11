@@ -16,7 +16,7 @@ class InviteRequest extends FormRequest
     {
         return [
             'email' => ['required', 'email'],
-            'role'  => ['required', Rule::in(['member', 'admin', 'funcionario', 'cliente'])],
+            'role' => ['required', Rule::in(['admin', 'member', 'client'])],
         ];
     }
 }

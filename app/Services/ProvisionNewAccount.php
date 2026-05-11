@@ -3,38 +3,43 @@
 namespace App\Services;
 
 use App\Jobs\CreateStripeCustomer;
-use App\Models\User;
 use App\Models\Tenant;
-use Illuminate\Support\Str;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ProvisionNewAccount
 {
+    public function __construct(
+        private readonly TenantMembershipService $tenantMembershipService,
+    ) {}
+
     public function handle(string $name, string $email, ?string $password = null): User
     {
-        return DB::transaction(function () use ($name, $email, $password) {
+        return DB::transaction(function () use ($name, $email, $password): User {
             $user = User::create([
-                'name'     => $name,
-                'email'    => $email,
+                'name' => $name,
+                'email' => $email,
                 'password' => $password,
             ]);
 
             $tenant = Tenant::create([
-                'name'    => $name,
-                'slug'    => $this->generateUniqueSlug($name),
-                'plan'    => 'free',
+                'name' => $name,
+                'slug' => $this->generateUniqueSlug($name),
+                'plan' => 'free',
             ]);
 
-            dispatch(new CreateStripeCustomer($tenant, $name, $email));
+            $this->tenantMembershipService->attachUserToTenant(
+                user: $user,
+                tenant: $tenant,
+                role: 'owner',
+                isDefault: true,
+                status: 'active',
+            );
 
-            $user->tenants()->attach($tenant->id, [
-                'role'      => 'owner',
-                'is_default' => true,
-                'status'    => 'active',
-                'joined_at' => now(),
-            ]);
+            CreateStripeCustomer::dispatch($tenant, $name, $email)->afterCommit();
 
-            return $user;
+            return $user->fresh();
         });
     }
 

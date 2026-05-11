@@ -12,39 +12,45 @@ use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
-     * Display the login view.
-     */
     public function create(): View
     {
         return view('auth.login');
     }
 
-    /**
-     * Handle an incoming authentication request.
-     */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
 
         $request->session()->regenerate();
 
-        $tenant = $request->user()->defaultTenant();
+        $user = $request->user();
+        $tenant = $user?->defaultTenant();
 
-        session(['active_tenant_id' => $tenant->id]);
+        if (!$tenant) {
+            Auth::guard('web')->logout();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()
+                ->route('login')
+                ->withErrors([
+                    'email' => 'Sua conta não possui um tenant ativo associado.',
+                ]);
+        }
+
+        $request->session()->put('active_tenant_id', $tenant->id);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
-    /**
-     * Destroy an authenticated session.
-     */
     public function destroy(Request $request): RedirectResponse
     {
+        $request->session()->forget('active_tenant_id');
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect('/');
@@ -53,7 +59,7 @@ class AuthenticatedSessionController extends Controller
     public function storeApi(Request $request): JsonResponse
     {
         $request->validate([
-            'email'    => ['required', 'email'],
+            'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
@@ -63,21 +69,32 @@ class AuthenticatedSessionController extends Controller
             ], 401);
         }
 
-        $user   = Auth::user();
-        $tenant = $user->defaultTenant();
-        $token  = $user->createToken('api')->plainTextToken;
+        $user = Auth::user();
+        $tenant = $user?->defaultTenant();
+
+        if (!$tenant) {
+            Auth::guard('web')->logout();
+
+            return response()->json([
+                'message' => 'Sua conta não possui um tenant ativo associado.',
+            ], 422);
+        }
+
+        $token = $user->createToken('api', ['tenant:' . $tenant->id])->plainTextToken;
 
         return response()->json([
-            'token'     => $token,
+            'token' => $token,
             'tenant_id' => $tenant->id,
-            'user'      => $user,
+            'user' => $user,
         ]);
     }
 
     public function destroyApi(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $request->user()->currentAccessToken()?->delete();
 
-        return response()->json(['message' => 'Logout realizado.']);
+        return response()->json([
+            'message' => 'Logout realizado.',
+        ]);
     }
 }

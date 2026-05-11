@@ -10,11 +10,17 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $permissionRegistrar = app(PermissionRegistrar::class);
 
-        Role::firstOrCreate([
-            'name' => 'super-admin',
-            'guard_name' => 'web',
-        ]);
+        $permissionRegistrar->forgetCachedPermissions();
+
+        $currentTeamId = $permissionRegistrar->getPermissionsTeamId();
+
+        $permissionRegistrar->setPermissionsTeamId(null);
+
+        Role::findOrCreate('super-admin', 'web');
+
+        $permissionRegistrar->setPermissionsTeamId($currentTeamId);
+        $permissionRegistrar->forgetCachedPermissions();
     }
 }

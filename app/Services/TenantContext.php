@@ -2,22 +2,23 @@
 
 namespace App\Services;
 
-use App\Models\Tenant;
 use App\Exceptions\TenantNotFoundException;
+use App\Models\Tenant;
+use Spatie\Permission\PermissionRegistrar;
 
 class TenantContext
 {
     private ?Tenant $current = null;
 
+    public function __construct(
+        private readonly PermissionRegistrar $permissionRegistrar,
+    ) {}
+
     public function set(Tenant $tenant): void
     {
         $this->current = $tenant;
 
-        // Sincroniza Spatie team scope
-        if (class_exists(\Spatie\Permission\PermissionRegistrar::class)) {
-            app(\Spatie\Permission\PermissionRegistrar::class)
-                ->setPermissionsTeamId($tenant->id);
-        }
+        $this->permissionRegistrar->setPermissionsTeamId($tenant->id);
     }
 
     public function get(): Tenant
@@ -42,5 +43,7 @@ class TenantContext
     public function clear(): void
     {
         $this->current = null;
+
+        $this->permissionRegistrar->setPermissionsTeamId(null);
     }
 }
