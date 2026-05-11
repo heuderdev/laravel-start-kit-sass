@@ -37,10 +37,9 @@
 
                         <select name="role"
                             class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-                            <option value="member">Member</option>
                             <option value="admin">Admin</option>
-                            <option value="funcionario">Funcionário</option>
-                            <option value="cliente">Cliente</option>
+                            <option value="member">Member</option>
+                            <option value="client">Cliente</option>
                         </select>
 
                         <button type="submit"
@@ -87,11 +86,7 @@
                                     <option value="admin" {{ $member->pivot->role === 'admin' ? 'selected' : '' }}>
                                         Admin
                                     </option>
-                                    <option value="funcionario" {{ $member->pivot->role === 'funcionario' ? 'selected' :
-                                        '' }}>
-                                        Funcionário
-                                    </option>
-                                    <option value="cliente" {{ $member->pivot->role === 'cliente' ? 'selected' : '' }}>
+                                    <option value="cliente" {{ $member->pivot->role === 'client' ? 'selected' : '' }}>
                                         Cliente
                                     </option>
                                 </select>
