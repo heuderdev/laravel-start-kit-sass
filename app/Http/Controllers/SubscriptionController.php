@@ -18,6 +18,12 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $tenant = $this->context->get();
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'redirect'       => env('URL_LOGIN')
+            ]);
+        }
+
         $isOwner = $user->tenants()
             ->wherePivot('tenant_id', $tenant->id)
             ->wherePivot('role', 'owner')
@@ -65,7 +71,7 @@ class SubscriptionController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'url'       => $checkout->url,
+                'url'       => config('app.url') . ':8000/login',
                 'tenant_id' => $tenant->id,
             ]);
         }
