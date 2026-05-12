@@ -61,25 +61,43 @@ class RegisteredUserController extends Controller
 
     public function storeApi(Request $request): JsonResponse
     {
-        $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'unique:' . User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        try {
+            $validated = $request->validate(
+                [
+                    'name' => ['required', 'string', 'max:255'],
+                    'email' => ['required', 'string', 'email', 'unique:' . User::class],
+                    'password' => ['required', 'confirmed', Rules\Password::defaults()],
+                ],
+                [
+                    'name.required' => 'O nome é obrigatório.',
+                    'email.required' => 'O e-mail é obrigatório.',
+                    'email.email' => 'Informe um e-mail válido.',
+                    'email.unique' => 'Este e-mail já está cadastrado.',
+                    'password.required' => 'A senha é obrigatória.',
+                    'password.confirmed' => 'A confirmação da senha não confere.',
+                ]
+            );
 
-        $user = app(ProvisionNewAccount::class)->handle(
-            name: $request->name,
-            email: $request->email,
-            password: $request->password,
-        );
+            $user = app(ProvisionNewAccount::class)->handle(
+                name: $validated['name'],
+                email: $validated['email'],
+                password: $validated['password'],
+            );
 
-        $tenant = $user->defaultTenant();
-        $token  = $user->createToken('api')->plainTextToken;
+            $tenant = $user->defaultTenant();
+            $token = $user->createToken('api')->plainTextToken;
 
-        return response()->json([
-            'token'     => $token,
-            'tenant_id' => $tenant->id,
-            'user'      => $user,
-        ], 201);
+            return response()->json([
+                'message' => 'Usuário cadastrado com sucesso.',
+                'token' => $token,
+                'tenant_id' => $tenant->id,
+                'user' => $user,
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação.',
+                'errors' => $e->errors(),
+            ], 422);
+        }
     }
 }

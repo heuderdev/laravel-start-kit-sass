@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CookiePreferenceController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\MeController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PricingController;
 use App\Http\Controllers\SubscriptionController;
@@ -23,7 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
-    Route::get('/me', fn(Request $request) => $request->user())->name('me');
+    Route::get('/me', [MeController::class, 'index'])->name('api.me');
 
     Route::get('/tenants', [TenantController::class, 'index'])->name('api.tenants.index');
     Route::post('/tenants/switch', [TenantController::class, 'switch'])->name('api.tenants.switch');

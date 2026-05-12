@@ -19,6 +19,7 @@ class TenantController extends Controller
 
     public function index(Request $request): JsonResponse|View
     {
+
         $tenants = $request->user()
             ->tenants()
             ->withPivot(['role', 'is_default', 'status', 'joined_at'])
