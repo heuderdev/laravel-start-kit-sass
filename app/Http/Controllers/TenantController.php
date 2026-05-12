@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use App\Exceptions\TenantAccessDeniedException;
-use App\Services\TenantContext;
-use App\Services\TenantMembershipService;
+use App\Services\ListUserTenantsService;
+use App\Services\SwitchTenantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,31 +14,13 @@ use Illuminate\View\View;
 class TenantController extends Controller
 {
     public function __construct(
-        private readonly TenantContext $context,
-        private readonly TenantMembershipService $membershipService,
+        private readonly ListUserTenantsService $listUserTenantsService,
+        private readonly SwitchTenantService $switchTenantService,
     ) {}
 
     public function index(Request $request): JsonResponse|View
     {
-
-        $tenants = $request->user()
-            ->tenants()
-            ->withPivot(['role', 'is_default', 'status', 'joined_at'])
-            ->wherePivot('status', 'active')
-            ->orderByPivot('is_default', 'desc')
-            ->get()
-            ->map(function ($tenant) use ($request) {
-                return [
-                    'id'         => $tenant->id,
-                    'name'       => $tenant->name,
-                    'slug'       => $tenant->slug,
-                    'logo_url'   => $tenant->logo_url,
-                    'plan'       => $tenant->plan,
-                    'role'       => $request->user()->roleInTenant($tenant),
-                    'is_default' => (bool) $tenant->pivot->is_default,
-                    'joined_at'  => $tenant->pivot->joined_at,
-                ];
-            });
+        $tenants = $this->listUserTenantsService->handle($request->user());
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -55,18 +38,10 @@ class TenantController extends Controller
         ]);
 
         $user = $request->user();
-
-        $tenant = $user->tenants()
-            ->wherePivot('status', 'active')
-            ->find($request->integer('tenant_id'));
-
-        if (!$tenant) {
-            throw new TenantAccessDeniedException(
-                "User does not belong to tenant [{$request->tenant_id}]."
-            );
-        }
-
-        $this->membershipService->setDefaultTenant($user, $tenant);
+        $tenant = $this->switchTenantService->handle(
+            user: $user,
+            tenantId: $request->integer('tenant_id'),
+        );
 
         if ($request->expectsJson()) {
             $request->user()->currentAccessToken()?->delete();
@@ -74,13 +49,13 @@ class TenantController extends Controller
             $token = $user->createToken('api', ['tenant:' . $tenant->id])->plainTextToken;
 
             return response()->json([
-                'token'     => $token,
+                'token' => $token,
                 'tenant_id' => $tenant->id,
-                'tenant'    => [
-                    'id'      => $tenant->id,
-                    'name'    => $tenant->name,
-                    'slug'    => $tenant->slug,
-                    'plan'    => $tenant->plan,
+                'tenant' => [
+                    'id' => $tenant->id,
+                    'name' => $tenant->name,
+                    'slug' => $tenant->slug,
+                    'plan' => $tenant->plan,
                     'logo_url' => $tenant->logo_url,
                 ],
             ]);

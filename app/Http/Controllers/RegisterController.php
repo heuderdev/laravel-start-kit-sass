@@ -1,22 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Http\Requests\RegisterUserRequest;
 use App\Services\ProvisionNewAccount;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 
 class RegisterController extends Controller
 {
-    public function __construct(private ProvisionNewAccount $provisioner) {}
+    public function __construct(
+        private readonly ProvisionNewAccount $provisioner,
+    ) {}
 
-    public function store(Request $request)
+    public function store(RegisterUserRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        $validated = $request->validated();
 
         $user = $this->provisioner->handle(
             name: $validated['name'],
@@ -26,9 +27,10 @@ class RegisterController extends Controller
 
         $tenant = $user->defaultTenant();
 
-        session(['active_tenant_id' => $tenant->id]);
+        Auth::login($user);
 
-        auth()->login($user);
+        $request->session()->regenerate();
+        $request->session()->put('active_tenant_id', $tenant->id);
 
         return redirect('/dashboard');
     }

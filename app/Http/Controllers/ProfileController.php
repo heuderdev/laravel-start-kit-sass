@@ -1,16 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\DeleteUserAccountService;
+use App\Services\UpdateUserProfileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        private readonly UpdateUserProfileService $updateUserProfileService,
+        private readonly DeleteUserAccountService $deleteUserAccountService,
+    ) {}
+
     /**
      * Display the user's profile form.
      */
@@ -26,13 +34,10 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
-
-        $request->user()->save();
+        $this->updateUserProfileService->handle(
+            user: $request->user(),
+            data: $request->validated(),
+        );
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -46,14 +51,10 @@ class ProfileController extends Controller
             'password' => ['required', 'current_password'],
         ]);
 
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $this->deleteUserAccountService->handle(
+            request: $request,
+            user: $request->user(),
+        );
 
         return Redirect::to('/');
     }

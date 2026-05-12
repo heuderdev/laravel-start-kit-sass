@@ -9,41 +9,40 @@
 
     <div class="py-6">
         <div class="max-w-4xl mx-auto w-full space-y-6 sm:px-6 lg:px-8">
-
             <x-flash-messages />
 
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 @foreach($plans as $plan)
                 <div
-                    class="flex flex-col rounded-2xl bg-white p-8 shadow {{ $plan['is_current'] ? 'border-2 border-blue-500' : 'border border-gray-200' }}">
-                    @if($plan['is_current'])
+                    class="flex flex-col rounded-2xl bg-white p-8 shadow {{ $plan->is_current ? 'border-2 border-blue-500' : 'border border-gray-200' }}">
+                    @if($plan->is_current)
                     <span class="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-500">
                         Plano atual
                     </span>
                     @endif
 
                     <h2 class="text-2xl font-bold text-gray-800">
-                        {{ $plan['name'] }}
+                        {{ $plan->name }}
                     </h2>
 
                     <p class="mt-3 text-4xl font-extrabold text-gray-900">
-                        {{ $plan['price_formatted'] }}
+                        {{ $plan->price_formatted }}
 
-                        @if($plan['interval'])
+                        @if($plan->interval)
                         <span class="text-base font-normal text-gray-500">
                             /mês
                         </span>
                         @endif
                     </p>
 
-                    @if($plan['trial_days'] > 0)
+                    @if($plan->trial_days > 0)
                     <p class="mt-1 text-sm text-green-600">
-                        {{ $plan['trial_days'] }} dias grátis
+                        {{ $plan->trial_days }} dias grátis
                     </p>
                     @endif
 
                     <ul class="mt-6 flex-1 space-y-2">
-                        @foreach($plan['features'] as $feature)
+                        @foreach($plan->features as $feature)
                         <li class="flex items-center text-sm text-gray-600">
                             <svg class="mr-2 h-4 w-4 shrink-0 text-green-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
@@ -57,17 +56,16 @@
                     </ul>
 
                     <div class="mt-8">
-                        @if($plan['cta_action'] && ! $plan['is_current'])
-                        <form method="POST" action="{{ route($plan['cta_action']) }}">
+                        @if($plan->cta_action && ! $plan->is_current)
+                        <form method="POST" action="{{ route($plan->cta_action) }}">
                             @csrf
-                            @can('manageMembers', $tenant)
 
+                            @can('manageMembers', $tenant)
                             <button type="submit"
                                 class="w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700">
-                                {{ $plan['cta_label'] }}
+                                {{ $plan->cta_label }}
                             </button>
                             @else
-
                             <div
                                 class="w-full rounded-xl text-center bg-gray-200 py-3 font-semibold text-gray-500 transition">
                                 Você não é proprietário desta empresa
@@ -77,7 +75,7 @@
                         @else
                         <button disabled
                             class="w-full cursor-not-allowed rounded-xl bg-gray-200 py-3 font-semibold text-gray-500">
-                            {{ $plan['cta_label'] }}
+                            {{ $plan->cta_label }}
                         </button>
                         @endif
                     </div>
