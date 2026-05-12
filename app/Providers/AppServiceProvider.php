@@ -15,6 +15,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(\App\Services\TenantContext::class);
+        $this->app->singleton(\App\Services\AuditService::class);
     }
 
     public function boot(): void

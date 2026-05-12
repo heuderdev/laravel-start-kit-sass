@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\SuperAdminTenantController;
 use App\Http\Controllers\Admin\SuperAdminUserController;
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CookiePreferenceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvitationController;
@@ -92,4 +93,10 @@ Route::middleware(['auth', 'tenant', 'super-admin'])->group(function () {
     Route::patch('/cookies',       [CookiePreferenceController::class, 'update'])->name('cookies.update');
     Route::post('/cookies/renew',  [CookiePreferenceController::class, 'renew'])->name('cookies.renew');
     Route::delete('/cookies',      [CookiePreferenceController::class, 'destroy'])->name('cookies.destroy');
+});
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/auditoria', [AuditController::class, 'index'])->name('audit.index');
+    Route::get('/auditoria/{auditLog}', [AuditController::class, 'show'])->name('audit.show');
 });

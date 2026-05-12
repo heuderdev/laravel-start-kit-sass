@@ -20,6 +20,20 @@ class WebhookController extends CashierWebhookController
 
         $this->syncTenantPlanFromStripeWebhookService->syncFromSubscriptionPayload($payload);
 
+        // app(\App\Services\AuditService::class)->log([
+        //     'acao' => 'subscription_created',
+        //     'componente' => 'stripe.webhook',
+        //     'categoria' => 'integracao',
+        //     'nivel' => 'info',
+        //     'descricao' => 'Stripe criou uma assinatura.',
+        //     'dados_novos' => [
+        //         'type' => $payload['type'] ?? null,
+        //         'event_id' => $payload['id'] ?? null,
+        //         'subscription_id' => data_get($payload, 'data.object.id'),
+        //         'customer_id' => data_get($payload, 'data.object.customer'),
+        //     ],
+        // ]);
+
         return $this->successMethod();
     }
 
