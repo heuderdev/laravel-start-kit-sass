@@ -18,6 +18,7 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 border-b border-gray-200">
+                    @can('manageMembers', $tenant)
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Convidar membro</h3>
 
                     <form method="POST" action="{{ route('invitations.invite') }}" class="flex gap-3 flex-wrap">
@@ -38,11 +39,17 @@
                             Enviar convite
                         </button>
                     </form>
+                    @else
+                    <h3 class="text-lg font-semibold text-gray-700 text-center">Você não pode convidar membros apenas,
+                        quando você é
+                        o dono da empresa.</h3>
+                    @endcan
                 </div>
             </div>
 
             <div class="space-y-3">
-                @foreach ($members as $member)
+                @can('manageMembers', $tenant)
+                @forelse ($members as $member)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-gray-200">
                     <div class="p-5 flex items-center justify-between">
                         <div class="flex items-center gap-4">
@@ -57,27 +64,26 @@
                             </div>
                         </div>
 
+
                         <div class="flex items-center gap-3">
                             <span
-                                class="text-xs font-medium px-3 py-1 rounded-full
-                                    {{ $member->pivot->role === 'owner' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600' }}">
+                                class="text-xs font-medium px-3 py-1 rounded-full {{ $member->pivot->role === 'owner' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600' }}">
                                 {{ ucfirst($member->pivot->role) }}
                             </span>
 
-                            @if ($member->pivot->role !== 'owner')
                             <form method="POST" action="{{ route('members.update', $member->id) }}">
                                 @csrf
                                 @method('PATCH')
 
                                 <select name="role" onchange="this.form.submit()"
-                                    class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                    class="text-sm w-24 border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400">
                                     <option value="member" {{ $member->pivot->role === 'member' ? 'selected' : '' }}>
                                         Member
                                     </option>
                                     <option value="admin" {{ $member->pivot->role === 'admin' ? 'selected' : '' }}>
                                         Admin
                                     </option>
-                                    <option value="cliente" {{ $member->pivot->role === 'client' ? 'selected' : '' }}>
+                                    <option value="client" {{ $member->pivot->role === 'client' ? 'selected' : '' }}>
                                         Cliente
                                     </option>
                                 </select>
@@ -93,11 +99,21 @@
                                     Remover
                                 </button>
                             </form>
-                            @endif
                         </div>
+
+
                     </div>
                 </div>
-                @endforeach
+                @empty
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-gray-200">
+                    <div class="p-6 text-center">
+                        <p class="text-gray-600 font-medium">Nenhum membro encontrado.</p>
+                        <p class="text-sm text-gray-500 mt-1">Quando houver membros neste workspace, eles aparecerão
+                            aqui.</p>
+                    </div>
+                </div>
+                @endforelse
+                @endcan
             </div>
 
         </div>

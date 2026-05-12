@@ -60,11 +60,19 @@
                         @if($plan['cta_action'] && ! $plan['is_current'])
                         <form method="POST" action="{{ route($plan['cta_action']) }}">
                             @csrf
+                            @can('manageMembers', $tenant)
 
                             <button type="submit"
                                 class="w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700">
                                 {{ $plan['cta_label'] }}
                             </button>
+                            @else
+
+                            <div
+                                class="w-full rounded-xl text-center bg-gray-200 py-3 font-semibold text-gray-500 transition">
+                                Você não é proprietário desta empresa
+                            </div>
+                            @endcan
                         </form>
                         @else
                         <button disabled

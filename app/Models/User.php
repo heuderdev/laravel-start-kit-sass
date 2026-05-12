@@ -10,7 +10,6 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
 
     protected $guarded = ['id'];
@@ -27,11 +26,11 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at'          => 'datetime',
-            'password'                   => 'hashed',
-            'two_factor_enabled'         => 'boolean',
-            'two_factor_recovery_codes'  => 'array',
-            'is_super_admin'             => 'boolean',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_recovery_codes' => 'array',
+            'is_super_admin' => 'boolean',
         ];
     }
 
@@ -53,7 +52,7 @@ class User extends Authenticatable
     public function belongsToTenant(int $tenantId): bool
     {
         return $this->tenants()
-            ->wherePivot('tenant_id', $tenantId)
+            ->where('tenants.id', $tenantId)
             ->wherePivot('status', 'active')
             ->exists();
     }
@@ -61,22 +60,36 @@ class User extends Authenticatable
     public function roleInTenant(Tenant $tenant): ?string
     {
         return $this->tenants()
-            ->wherePivot('tenant_id', $tenant->id)
+            ->where('tenants.id', $tenant->id)
             ->wherePivot('status', 'active')
-            ->value('tenant_user.role');
+            ->first()?->pivot?->role;
     }
 
     public function hasRoleInTenant(string $role, Tenant $tenant): bool
     {
-        return $this->roleInTenant($tenant) === $role;
+        return $this->tenants()
+            ->where('tenants.id', $tenant->id)
+            ->wherePivot('status', 'active')
+            ->wherePivot('role', $role)
+            ->exists();
     }
 
     public function hasAnyRoleInTenant(array $roles, Tenant $tenant): bool
     {
-        return in_array($this->roleInTenant($tenant), $roles, true);
+        return $this->tenants()
+            ->where('tenants.id', $tenant->id)
+            ->wherePivot('status', 'active')
+            ->wherePivotIn('role', $roles)
+            ->exists();
     }
+
     public function isSuperAdmin(): bool
     {
         return (bool) $this->is_super_admin;
+    }
+
+    public function isOwnerOfTenant(Tenant $tenant): bool
+    {
+        return $this->hasRoleInTenant('owner', $tenant);
     }
 }

@@ -10,6 +10,7 @@ use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResolveTenantContext
@@ -23,8 +24,23 @@ class ResolveTenantContext
         $user     = $request->user();
         $tenantId = $this->resolveTenantId($request);
 
+        Log::debug('ResolveTenantContext', [
+            'user_id'           => $user?->id,
+            'tenantId_resolved' => $tenantId,
+            'session_tenant_id' => $request->session()->get('active_tenant_id'),
+            'default_tenant'    => $user?->defaultTenant()?->id,
+            'expects_json'      => $request->expectsJson(),
+        ]);
+
         if ($tenantId === null) {
-            return $this->handleMissingTenant($request, $user);
+            $earlyResponse = $this->tryResolveFromDefault($request, $user);
+
+            if ($earlyResponse !== null) {
+                return $earlyResponse;
+            }
+
+            // Contexto já setado pelo defaultTenant — continua o pipeline
+            return $next($request);
         }
 
         $tenant = Tenant::query()->find($tenantId);
@@ -67,7 +83,13 @@ class ResolveTenantContext
         return null;
     }
 
-    private function handleMissingTenant(Request $request, mixed $user): JsonResponse|RedirectResponse
+    /**
+     * Tenta resolver o tenant pelo defaultTenant do usuário.
+     *
+     * Retorna null  → contexto setado, request deve continuar ($next).
+     * Retorna Response → não é possível continuar, encerra o pipeline.
+     */
+    private function tryResolveFromDefault(Request $request, mixed $user): JsonResponse|RedirectResponse|null
     {
         if (!$user) {
             if ($request->expectsJson()) {
@@ -91,17 +113,11 @@ class ResolveTenantContext
                 $request->session()->put('active_tenant_id', $defaultTenant->id);
             }
 
-            return $request->expectsJson()
-                ? response()->json([
-                    'type'              => 'https://httpstatuses.io/428',
-                    'title'             => 'Tenant header required',
-                    'status'            => 428,
-                    'detail'            => 'Envie o header X-Tenant-ID nas requisições de API.',
-                    'default_tenant_id' => $defaultTenant->id,
-                ], 428)
-                : redirect()->route('dashboard');
+            // null = contexto resolvido, continua o pipeline
+            return null;
         }
 
+        // Autenticado mas sem nenhum tenant ativo
         if ($request->expectsJson()) {
             return response()->json([
                 'type'   => 'https://httpstatuses.io/422',

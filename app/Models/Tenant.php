@@ -36,6 +36,15 @@ class Tenant extends Model
         return $this->hasMany(TenantInvitation::class);
     }
 
+    public function activeNonOwnerUsers(): BelongsToMany
+    {
+        return $this->users()
+            ->withPivot(['role', 'is_default', 'status', 'joined_at'])
+            ->wherePivot('status', 'active')
+            ->wherePivot('role', '!=', 'owner')
+            ->orderByPivot('joined_at', 'asc');
+    }
+
     // public function subscriptions(): HasMany
     // {
     //     return $this->hasMany(\Laravel\Cashier\Subscription::class, 'billable_id')

@@ -22,11 +22,9 @@ class MemberController extends Controller
     public function index(Request $request): View|JsonResponse
     {
         $tenant = $this->context->get();
+        // $this->authorize('manageMembers', $tenant);
 
-        $members = $tenant->users()
-            ->withPivot(['role', 'is_default', 'status', 'joined_at'])
-            ->wherePivot('status', 'active')
-            ->orderByPivot('joined_at', 'asc')
+        $members = $tenant->activeNonOwnerUsers()
             ->get()
             ->each(function (User $member) use ($tenant): void {
                 $member->setAttribute('tenant_role', $member->roleInTenant($tenant));

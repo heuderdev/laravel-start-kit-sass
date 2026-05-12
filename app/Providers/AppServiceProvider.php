@@ -4,23 +4,34 @@ namespace App\Providers;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Policies\TenantPolicy;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(\App\Services\TenantContext::class);
     }
 
     public function boot(): void
     {
         $this->registerTenantGates();
+
+        View::composer('*', function ($view) {
+            if (app(\App\Services\TenantContext::class)->isSet()) {
+                $view->with('tenant', app(\App\Services\TenantContext::class)->get());
+            }
+        });
     }
 
     private function registerTenantGates(): void
     {
+        Gate::policy(Tenant::class, TenantPolicy::class);
+
         // Apenas o owner
         Gate::define('tenant.owner', function (User $user, Tenant $tenant): bool {
             return $user->hasRoleInTenant('owner', $tenant);
