@@ -8,7 +8,7 @@ use App\Policies\TenantPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-
+use Laravel\Cashier\Cashier;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Cashier::useCustomerModel(Tenant::class);
+
         $this->registerTenantGates();
 
         View::composer('*', function ($view) {

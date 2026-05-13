@@ -48,12 +48,9 @@ class SubscriptionController extends Controller
 
     public function success(Request $request): JsonResponse|RedirectResponse
     {
-        $tenant = $this->context->get();
-
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Pagamento realizado com sucesso!',
-                'tenant_id' => $tenant->id,
+                'message' => 'Pagamento realizado com sucesso!'
             ]);
         }
 
