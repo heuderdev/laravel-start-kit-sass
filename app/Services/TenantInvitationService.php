@@ -6,7 +6,9 @@ use App\Mail\TenantInvitationMail;
 use App\Models\Tenant;
 use App\Models\TenantInvitation;
 use App\Models\User;
+use App\Notifications\TenantInvitationNotification;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 class TenantInvitationService
@@ -49,7 +51,16 @@ class TenantInvitationService
             'expires_at' => now()->addDays(7),
         ]);
 
-        Mail::to($invitation->email)->send(new TenantInvitationMail($invitation));
+        // Mail::to($invitation->email)->send(new TenantInvitationMail($invitation));
+
+        $user = User::query()->where('email', $invitation->email)->first();
+
+        if ($user) {
+            $user->notify(new TenantInvitationNotification($invitation));
+        } else {
+            Notification::route('mail', $invitation->email)
+                ->notify(new TenantInvitationNotification($invitation));
+        }
 
         return $invitation;
     }
