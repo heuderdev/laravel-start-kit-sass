@@ -14,6 +14,7 @@
 
                     <ul class="divide-y divide-gray-100">
                         @foreach($notifications as $notification)
+
                         <li class="py-4 flex items-start justify-between gap-4">
                             <div>
                                 <p class="text-sm font-medium text-gray-900">
@@ -24,7 +25,7 @@
                                 </p>
                             </div>
 
-                            <a href="{{ $notification['data']['action_url'] }}"
+                            <a href="{{ $notification['data']['action_url'] }}?notification_id={{ $notification['id'] }}"
                                 class="shrink-0 text-sm font-medium text-indigo-600 hover:text-indigo-500">
                                 Aceitar convite
                             </a>

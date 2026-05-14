@@ -45,6 +45,8 @@ class InvitationController extends Controller
 
     public function accept(Request $request, string $token): JsonResponse|RedirectResponse
     {
+        $notificationId = $request->query('notification_id');
+
         if (!$request->user()) {
             $pending = $this->invitationService->findPendingByToken($token);
 
@@ -57,6 +59,9 @@ class InvitationController extends Controller
             }
 
             session(['invitation_token' => $token]);
+
+            $notification = \Illuminate\Notifications\DatabaseNotification::where('id', $notificationId)->firstOrFail();
+            $notification->markAsRead();
 
             return redirect()
                 ->route('register')
