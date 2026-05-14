@@ -24,7 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
-    Route::get('/me', [MeController::class, 'index'])->name('api.me');
+    Route::get('/me', [MeController::class, 'index'])->middleware('onboarding')->name('api.me');
 
     Route::get('/tenants', [TenantController::class, 'index'])->name('api.tenants.index');
     Route::post('/tenants/switch', [TenantController::class, 'switch'])->name('api.tenants.switch');

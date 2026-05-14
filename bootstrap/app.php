@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => \App\Http\Middleware\ResolveTenantContext::class,
             'plan'    => \App\Http\Middleware\EnsureTenantHasPlan::class,
             'super-admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
+            'onboarding'  =>  \App\Http\Middleware\EnsureOnboardingIsComplete::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

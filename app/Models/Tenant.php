@@ -22,6 +22,7 @@ class Tenant extends Model
         'deleted_at'    => 'datetime',
         'bypass_plan_limits' => 'boolean',
         'bypass_plan_limits_data_limite' => 'datetime',
+        'onboarding_step' => 'string',
     ];
 
     public function users(): BelongsToMany

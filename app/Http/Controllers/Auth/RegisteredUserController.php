@@ -51,10 +51,12 @@ class RegisteredUserController extends Controller
         );
 
         $tenant = $user->defaultTenant();
-        session(['active_tenant_id' => $tenant->id]);
+
         event(new Registered($user));
 
         Auth::login($user);
+
+        session(['active_tenant_id' => $tenant->id]);
 
         return redirect(route('dashboard', absolute: false));
     }

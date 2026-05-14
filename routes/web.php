@@ -7,6 +7,8 @@ use App\Http\Controllers\CookiePreferenceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\OnboardingAutoLoginController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PricingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
@@ -37,7 +39,7 @@ Route::middleware('auth')->group(function () {
 
 // ─── Autenticado — com tenant ─────────────────────────────────────────────────
 
-Route::middleware(['auth', 'tenant'])->group(function () {
+Route::middleware(['auth', 'tenant', 'onboarding'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -100,3 +102,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/auditoria', [AuditController::class, 'index'])->name('audit.index');
     Route::get('/auditoria/{auditLog}', [AuditController::class, 'show'])->name('audit.show');
 });
+
+
+Route::middleware(['auth', 'tenant'])->prefix('onboarding')->name('onboarding.')->group(function () {
+    Route::get('/{step}',          [OnboardingController::class, 'show'])->name('show');
+    Route::post('/setup-workspace', [OnboardingController::class, 'setupWorkspace'])->name('setup-workspace');
+    Route::post('/skip/{step}',    [OnboardingController::class, 'skip'])->name('skip');
+});
+
+
+Route::get('/onboarding/autologin/{token}', OnboardingAutoLoginController::class)->name('onboarding.autologin');
