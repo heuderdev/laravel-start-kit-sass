@@ -13,23 +13,27 @@ class DatabaseSeeder extends Seeder
 
     public function run(ProvisionNewAccount $provisioner): void
     {
-        $provisioner->handle(
-            name: 'SUPER ADMINISTRADOR',
-            email: 'super-admin@sass.com.br',
-            password: 'password',
-            is_super_admin: true
-        );
+        if (app()->environment('local', 'development')) {
+            $this->call(DevelopmentSeeder::class);
+        }
 
-        $provisioner->handle(
-            name: 'Heuder Sena',
-            email: 'heuder@sicoob.com.br',
-            password: 'password',
-        );
+        // $provisioner->handle(
+        //     name: 'SUPER ADMINISTRADOR',
+        //     email: 'super-admin@sass.com.br',
+        //     password: 'password',
+        //     is_super_admin: true
+        // );
 
-        $provisioner->handle(
-            name: 'Heuder Dev',
-            email: 'heuderdev@gmail.com',
-            password: 'password',
-        );
+        // $provisioner->handle(
+        //     name: 'Heuder Sena',
+        //     email: 'heuder@sicoob.com.br',
+        //     password: 'password',
+        // );
+
+        // $provisioner->handle(
+        //     name: 'Heuder Dev',
+        //     email: 'heuderdev@gmail.com',
+        //     password: 'password',
+        // );
     }
 }
