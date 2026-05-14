@@ -61,7 +61,10 @@ class InvitationController extends Controller
             session(['invitation_token' => $token]);
 
             $notification = \Illuminate\Notifications\DatabaseNotification::where('id', $notificationId)->firstOrFail();
-            $notification->markAsRead();
+            $notification->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
 
             return redirect()
                 ->route('register')
