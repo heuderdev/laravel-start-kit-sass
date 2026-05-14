@@ -9,6 +9,9 @@ class AuditLog extends Model
 {
     protected $table = 'auditoria';
 
+    const CREATED_AT = 'dt_criacao';
+    const UPDATED_AT = null;
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -61,5 +64,10 @@ class AuditLog extends Model
     public function scopePorPeriodo(Builder $query, string $inicio, string $fim): Builder
     {
         return $query->whereBetween('dt_criacao', [$inicio, $fim]);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
