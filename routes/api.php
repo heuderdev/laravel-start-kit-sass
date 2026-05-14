@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\SuperAdminTenantController;
+use App\Http\Controllers\Admin\SuperAdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CookiePreferenceController;
@@ -47,11 +48,14 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
 Route::post('/webhook/stripe', [WebhookController::class, 'handleWebhook'])->name('webhook.stripe');
 
 
-Route::middleware(['auth:sanctum'])->prefix('admin')->name('api.admin.')->group(function () {
+Route::middleware(['auth:sanctum', 'super-admin'])->prefix('admin')->name('api.admin.')->group(function () {
     Route::get('/tenants', [SuperAdminTenantController::class, 'index'])->name('tenants.index');
     Route::get('/tenants/{tenant}', [SuperAdminTenantController::class, 'edit'])->name('tenants.show');
-    Route::match(['put', 'patch'], '/tenants/{tenant}/bypass', [SuperAdminTenantController::class, 'updateBypass'])
-        ->name('tenants.bypass.update');
+    Route::match(['put', 'patch'], '/tenants/{tenant}/bypass', [SuperAdminTenantController::class, 'updateBypass'])->name('tenants.bypass.update');
+
+    Route::get('/users',                                    [SuperAdminUserController::class, 'index'])->name('users.index');
+    Route::post('/users/{user}/promote-super-admin',        [SuperAdminUserController::class, 'promote'])->name('users.promote-super-admin');
+    Route::delete('/users/{user}/revoke-super-admin',       [SuperAdminUserController::class, 'revoke'])->name('users.revoke-super-admin');
 });
 
 

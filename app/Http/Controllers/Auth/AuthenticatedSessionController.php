@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\OnboardingAutoLoginService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,7 @@ use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
+    public function __construct(private readonly OnboardingAutoLoginService $autoLoginService,) {}
     public function create(): View
     {
         return view('auth.login');
@@ -79,12 +81,30 @@ class AuthenticatedSessionController extends Controller
                 'message' => 'Sua conta não possui um tenant ativo associado.',
             ], 422);
         }
+        if ($tenant->onboarding_step !== 'completed' && $tenant->pivot->role === 'owner') {
+            return response()->json([
+                'message' => 'Seu cadastro ainda não foi finalizado. Acesse o link abaixo no navegador para concluir a configuração do seu workspace.',
+                'action' => [
+                    'message'    => 'Abra o link abaixo no seu navegador para continuar. O link expira em 15 minutos.',
+                    'url'        => $this->autoLoginService->generateUrl($request->user(), $tenant),
+                    'expires_in' => 900, // segundos
+                ],
+            ], 403);
+        }
 
         $token = $user->createToken('api', ['tenant:' . $tenant->id])->plainTextToken;
 
         return response()->json([
             'token' => $token,
-            'tenant_id' => $tenant->id,
+            'tenant_default' => [
+                'id'           => $tenant->id,
+                'name'         => $tenant->name,
+                'slug'         => $tenant->slug,
+                'plan'         => $tenant->plan,
+                'role'         => $tenant->pivot->role,        // ← explícito
+                'is_default'   => $tenant->pivot->is_default,
+                'status'       => $tenant->pivot->status,
+            ],
             'user' => $user,
         ]);
     }
