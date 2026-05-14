@@ -39,7 +39,7 @@ class StartTenantSubscriptionCheckoutService
         $cancelUrl = route('subscription.cancel', absolute: true);
 
         $checkout = $tenant->newSubscription('default', config('services.stripe.price_id'))
-            ->trialDays(3)
+            // ->trialDays(3)
             ->checkout([
                 'success_url' => $successUrl,
                 'cancel_url' => $cancelUrl,

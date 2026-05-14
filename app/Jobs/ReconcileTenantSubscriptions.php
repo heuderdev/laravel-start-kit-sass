@@ -3,9 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\Tenant;
+use App\Services\AuditService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 
 class ReconcileTenantSubscriptions implements ShouldQueue
@@ -34,18 +34,29 @@ class ReconcileTenantSubscriptions implements ShouldQueue
             $plan = $this->resolvePlan($tenant);
 
             if ($tenant->plan !== $plan) {
-                Log::info('ReconcileTenantSubscriptions: plano atualizado', [
-                    'tenant_id' => $tenant->id,
-                    'de'        => $tenant->plan,
-                    'para'      => $plan,
+                app(AuditService::class)->log([
+                    'acao'        => 'plan_updated',
+                    'componente'  => 'reconcile.subscription',
+                    'categoria'   => 'negocio',
+                    'nivel'       => 'info',
+                    'tabela'      => 'tenants',
+                    'registro_id' => $tenant->id,
+                    'descricao'   => 'Plano do tenant atualizado via reconciliação.',
+                    'dados_antigos' => ['plan' => $tenant->plan],
+                    'dados_novos'   => ['plan' => $plan],
                 ]);
 
                 $tenant->update(['plan' => $plan]);
             }
         } catch (\Throwable $e) {
-            Log::error('ReconcileTenantSubscriptions: falha ao reconciliar tenant', [
-                'tenant_id' => $tenant->id,
-                'error'     => $e->getMessage(),
+            app(AuditService::class)->log([
+                'acao'        => 'reconcile_failed',
+                'componente'  => 'reconcile.subscription',
+                'categoria'   => 'negocio',
+                'nivel'       => 'error',
+                'tabela'      => 'tenants',
+                'registro_id' => $tenant->id,
+                'descricao'   => 'Falha ao reconciliar tenant: ' . $e->getMessage(),
             ]);
         }
     }
@@ -54,6 +65,7 @@ class ReconcileTenantSubscriptions implements ShouldQueue
     {
         $subscription = $tenant->subscriptions()
             ->where('stripe_status', 'active')
+            ->whereIn('stripe_status', ['active', 'trialing'])
             ->where(function ($query) {
                 $query->whereNull('ends_at')
                     ->orWhere('ends_at', '>', now());
@@ -61,7 +73,25 @@ class ReconcileTenantSubscriptions implements ShouldQueue
             ->latest()
             ->first();
 
-        Log::info(json_encode($subscription));
+        app(AuditService::class)->log([
+            'acao'        => 'resolve_plan',
+            'componente'  => 'reconcile.subscription',
+            'categoria'   => 'negocio',
+            'nivel'       => 'info',
+            'tabela'      => 'subscriptions',
+            'registro_id' => $subscription?->id,
+            'descricao'   => 'Resolução de plano do tenant.',
+            'dados_novos' => [
+                'tenant_id'       => $tenant->id,
+                'subscription_id' => $subscription?->id,
+                'stripe_status'   => $subscription?->stripe_status,
+                'ends_at'         => $subscription?->ends_at?->toIso8601String(),
+                'trial_ends_at'   => $tenant->trial_ends_at?->toIso8601String(),
+                'plan_resolved'   => $subscription
+                    ? 'pro'
+                    : ($tenant->trial_ends_at?->isFuture() ? 'pro (trial)' : 'free'),
+            ],
+        ]);
 
         if ($subscription) {
             return 'pro';
